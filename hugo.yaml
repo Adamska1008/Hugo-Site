@@ -1,0 +1,25 @@
+baseURL: 'https://example.org/'
+languageCode: 'zh-cn'
+title: '随记'
+theme: 'PaperMod'
+
+enableEmoji: true
+
+params:
+  author: Zachary Zang
+  homeInfoParams:
+    title: Welcome
+    Content: "访问 **[文章](/articles)** 以阅读长文章。"
+
+menu:
+  main:
+    - identifier: 0
+      name: 文章
+      url: /articles/
+    - identifier: 1
+      name: 标签
+      url: /tags/
+
+markup:
+    highlight:
+        noClasses: false
