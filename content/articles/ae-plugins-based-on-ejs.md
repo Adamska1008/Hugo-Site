@@ -3,7 +3,6 @@ title: 使用ExtendScript编写AE插件
 date: 2024-02-14T19:15:02+08:00
 draft: true
 author: Zachary Zang
-UseHugoToc: true
 tags: 
     - ExtendScript
 ---
@@ -81,7 +80,7 @@ myButton.onClick = function(){ /* ... */ }
 
 我们继续以合成对象为例，合成对象在AE Scripting中为[CompItem](https://ae-scripting.docsforadobe.dev/items/compitem.html)，在AE的基本布局中，选中合成对象，其内容会在下侧的Comp Panel中展示，而其中的内容主要为图层（layer）。通过`item.layer(i)`接口可以获取第`i`个item，我们也可以调用`item.layers()`方法获取[LayerCollection对象](https://ae-scripting.docsforadobe.dev/layers/layercollection.html)。
 
-我们先编写一个简单的脚本，它弹窗展示目前Comp项目的名称（假设它是项目中的第一个item），以及CompItem下每一个图层的名称。
+以一个脚本为例，它弹窗展示目前Comp项目的名称（假设它是项目中的第一个item），以及CompItem下每一个图层的名称。
 
 ```js
 var comp = app.project.item(1);
@@ -91,6 +90,10 @@ for (var i = 1; i <= layersNum; i++) {
     alert(comp.layer(i).name)
 }
 ```
+
+编写脚本时可以直接参考AE软件中的对象命名，一般来说脚本中的对象参数名与AE软件中操作的参数名是一致的，前提是将AE的语言修改为英文。例如，随意创建一个矩形对象，可以在Comp Panel中看到，它具有Contents与Transform两个可调整属性。在脚本编辑中，我们只需要访问对应layer对象的`contents`与`transform`属性，即可完成对应的调整。调整的具体操作参考文档即可。
+
+规范的说，诸如`transform`这样的属性，属于AE Scripting中的[Property](https://ae-scripting.docsforadobe.dev/properties/property.html)。
 
 ## 参考文献
 
