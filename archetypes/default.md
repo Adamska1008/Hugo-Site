@@ -2,7 +2,7 @@
 title: '{{ replace .File.ContentBaseName "-" " " | title }}'
 date: {{ .Date }}
 draft: true
-author: Zachary Zang
+author: Zijian Zang
 UseHugoToc: true
 tags: 
 ---

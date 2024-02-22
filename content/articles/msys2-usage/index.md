@@ -1,7 +1,7 @@
 ---
 title: 使用MSYS2管理C++开发环境
 date: 2024-02-15T23:11:31+08:00
-author: Zachary Zang
+author: Zijian Zang
 tags: 
     - 环境配置
     - C++
