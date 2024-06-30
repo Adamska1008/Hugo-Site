@@ -6,10 +6,9 @@ theme: 'PaperMod'
 enableEmoji: true
 
 params:
-  author: Zachary Zang
+  author: Zijian Zang
   homeInfoParams:
     title: Welcome
-    Content: "访问 **[文章](/articles)** 以阅读长文章。"
 
 menu:
   main:

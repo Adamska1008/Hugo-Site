@@ -1,5 +1,5 @@
 ---
-title: '闲聊 K&R ch 8.6：为何Linux中一切皆文件，但你不能用read去读目录'
+title: '闲聊 K&R ch 8.6：过时的一章'
 date: 2024-07-01T00:03:37+08:00
 draft: false
 author: Zijian Zang
@@ -22,15 +22,19 @@ tags:
 
 > Because the format of the directory is considered file system metadata, the file system considers itself responsible for the integrity of directory data; thus, you can only update a directory indirectly by, for example, creating files, directories, or other object types within it. In this way, the file system makes sure that directory contents are as expected.[1]
 
+实际上，目前的linux系统接口中，使用`read`系统调用读取目录数据是不被允许的，一种解释是read被设计为获取线性的数据，而目录数据本身是一个结构化的对象，不符合read的设计原则。唯一获取目录数据方式是使用`getdents`，即Get Directory Entries。不过C语言没用封装这个系统调用，只能通过`syscall`函数调用。
+
 这里提供一个正确的`readdir`实现。
 
 ```c
+// It works like an iterator.
 linux_dirent *readdir(Dir *dp)
 {
     static linux_dirent dirent;
     static unsigned long offset;
     static char *buf;
     static int nread;
+    // Initialization Stage
     if (buf == NULL)
     {
         buf = (char *)malloc(BUFSIZ);
