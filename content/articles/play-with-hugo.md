@@ -3,7 +3,8 @@ title: '玩转Hugo'
 date: 2024-02-13T19:55:16+08:00
 draft: true
 author: Zijian Zang
-tags: ['Hugo']
+tags: 
+  - Hugo
 ---
 当你安装完Hugo并按照[Getting Started](https://gohugo.io/getting-started/)走一遍流程之后，虽然你拥有了一个可以编写内容的博客，但是它的功能还是过于简陋了，难以作为一个正式的博客被他人阅读。你可能会希望为自己的Hugo博客添加功能、美化界面或做其他一系列建设博客的工作，为此提供一些我个人的想法。
 

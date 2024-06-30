@@ -1,7 +1,7 @@
 ---
 title: 使用ExtendScript编写AE插件
 date: 2024-02-14T19:15:02+08:00
-draft: true
+draft: false
 author: Zijian Zang
 tags: 
     - ExtendScript
