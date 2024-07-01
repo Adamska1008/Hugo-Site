@@ -5,8 +5,9 @@ draft: false
 author: Zijian Zang
 UseHugoToc: true
 tags: 
- - linux
- - system programming
+ - Linux
+ - Unix
+ - System Programming
 ---
 
 <!--more-->
@@ -14,7 +15,7 @@ tags:
 《The C Programming Language》是一本经典的C语言入门书籍，其第八章介绍了一部分系统调用相关的知识。8.6章描述了如何基于系统调用动手写一个`ls`，然而，如果你尝试运行示例代码，你会发现：
 
 1. `opendir`、`readdir`、`closedir`函数已被定义。
-2. `open(dir_name, O_RDONLY)`虽然能返回正确的fd，但`read(fd)`将产生`errno 21`，目录错误。
+2. `open(dir_name, O_RDONLY)`虽然能返回正确的fd，但`read(fd)`将产生`errno 21`，EISDIR目录错误。
 
 先说第一个问题，这是由于这三个函数已经在`sys/dir.h`中定义了。K&R中为了使用`dirent`结构体，选择`#include<sys/dir.h>`，但我们实质上是要自己实现这个头文件，故造成了重复定义。
 
@@ -22,7 +23,18 @@ tags:
 
 > Because the format of the directory is considered file system metadata, the file system considers itself responsible for the integrity of directory data; thus, you can only update a directory indirectly by, for example, creating files, directories, or other object types within it. In this way, the file system makes sure that directory contents are as expected.[1]
 
-实际上，目前的linux系统接口中，使用`read`系统调用读取目录数据是不被允许的，一种解释是read被设计为获取线性的数据，而目录数据本身是一个结构化的对象，不符合read的设计原则。唯一获取目录数据方式是使用`getdents`，即Get Directory Entries。不过C语言没用封装这个系统调用，只能通过`syscall`函数调用。
+“一切皆文件”确实是Unix的核心设计理念，对于EISDIR，UNIX Programmer Manuel的解释为：
+>An attempt to write on a directory.[2]
+
+UNIX规范仅仅将写目录列为触发EISDIR的条件。在早期UNIX版本（例如出版K&R的七十年代），使用`read()`读取目录句柄确实是可行的，它的效果与现在Linux中的`getdents`差不多（后文将介绍如何使用`getdents`）。
+
+实际上，目前的linux系统接口中，使用`read`系统调用读取目录数据是不被允许的。由于基于errno的异常处理的落后性，在不同系统调用中errno可能被解读为不同含义。例如，在`read`系统调用的man page中，EISDIR被描述为：
+
+>fd refers to a directory.[3]
+
+此处可见Linux规范与Unix规范的差异性。
+
+这一设计的一种解释是，`read`被设计为获取线性的数据，而目录数据本身是一个结构化的对象，不符合read的设计原则。Linux中获取目录信息的系统调用是`getdents`（Get Directory Entries）。不过C语言没有封装这个系统调用，只能通过`syscall`函数调用。
 
 这里提供一个正确的`readdir`实现。
 
@@ -55,7 +67,7 @@ linux_dirent *readdir(Dir *dp)
 }
 ```
 
-其中`linux_dirent`结构体需要自己编写，建议用它更换书中`Dirent`的定义。
+其中`linux_dirent`结构体需要自己定义，建议用它更换书中`Dirent`的定义。
 
 ```c
 typedef struct
@@ -70,3 +82,7 @@ typedef struct
 ## 参考文献
 
 [1] Remzi H. Arpaci-Dusseau, Andrea C. Arpaci-Dusseau. Operating Systems: Three Easy Pieces.
+
+[2] UNIX Programmer's Manual: Fourth Edition.
+
+[3] Linux Man Page. 

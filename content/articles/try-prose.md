@@ -5,8 +5,8 @@ draft: true
 author: Zijian Zang
 UseHugoToc: true
 tags: 
- - prose
- - program by example
+ - PROSE
+ - Program By Example(PBE)
 ---
 
 由于我的毕设涉及到prose，而prose本身无论国内外相关文章都比较少。因此，我决定以记录毕设过程的方式，聊一聊prose学习与使用过程中遇到的一系列问题。

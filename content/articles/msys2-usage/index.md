@@ -1,9 +1,9 @@
 ---
-title: 使用MSYS2管理C++开发环境
+title: Windows使用MSYS2管理C++开发环境
 date: 2023-06-15T23:11:31+08:00
 author: Zijian Zang
 tags: 
-    - 环境配置
+    - Windows
     - C++
 ---
 
