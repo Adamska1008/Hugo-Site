@@ -1,10 +1,12 @@
 ---
 title: 'IC-Light：有用，但不万能'
 date: 2024-07-01T00:12:37+08:00
-draft: true
+draft: false
 author: Zijian Zang
 UseHugoToc: true
 tags: 
+ - Stable Diffusion
+ - AIGC
 ---
 
 <!--more-->
