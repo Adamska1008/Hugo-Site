@@ -10,6 +10,8 @@ tags:
  - System Programming
 ---
 
+K&R即《The C Programming Language》。本文讨论K&R在第八章第六节中，由于年代问题出现的一些不符合目前操作系统的内容。
+
 <!--more-->
 
 《The C Programming Language》是一本经典的C语言入门书籍，其第八章介绍了一部分系统调用相关的知识。8.6章描述了如何基于系统调用动手写一个`ls`，然而，如果你尝试运行示例代码，你会发现：
