@@ -39,6 +39,8 @@ int main()
 
 有些编译器支持更强的语义。例如GCC与Clang支持编译参数`-fwrapv`，使得整型溢出必定表现为二进制补码溢出的形式。例如，对于上文的代码示例，加入该参数后二者输出都为`0`。
 
+
+
 ## 参考文献
 
 [1] Will Dietz, Peng Li, John Regehr, Vikram Adve. Understanding Integer Overflow in C/C++.
