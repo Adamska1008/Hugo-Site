@@ -43,6 +43,53 @@ LLVM指令集（在论文发表时，2003年）只有31个操作符。这是因�
 
 #### 显示内存分配和统一内存模型
 
-LLVM提供了带类型的内存分配指令`malloc`，它在堆区内存分配一个或多个指定类型的元素，返回一个指向该内存的带类型信息的指针。`free`指令用于释放内存。
+LLVM提供了带类型的内存分配指令`malloc`，它在堆区内存分配一个或多个指定类型的元素，返回一个指向该内存的带类型信息的指针。`free`指令用于释放内存。`alloca`用于在当前函数的栈区开辟内存，栈区指令的扩展都是用`alloca`显示执行的。
+
+LLVM一切左值（addressable object）都是被显示分配的。而全局变量和函数的定义都是通过对象地址来进行的。这样就允许LLVM使用统一的内存模型，所有的内存操作都基于带类型的指针进行，没有隐式访问内存的方法。这简化了访存分析，而且不需要重定义取地址运算符。
+
+#### 函数调用和异常处理
+
+LLVM的函数调用基于`call`指令。该指令接受一个带类型的函数指针（函数名或地址）与其他带类型的参数。这一层函数调用的抽象同样是与硬件无关的。
+
+LLVM的最大一个特征是提供了一个显式的、低层级的、硬件无关的实现异常功能的机制。这个机制也支持实现C语言中的`setjmp`与`longjmp`，能和其他语言中的异常机制一样用相同的处理办法优化。
+
+异常处理机制基于两个指令，`invoke`和`unwind`。它们提供了一种基于**堆栈展开**（stack unwinding）的异常实现方法。`invoke`和`call`类似，但在调用时会添加另一个基本块（basic block）用于异常处理。当调用`unwind`后，程序回退到`invoke`指令，并将控制流转化到`invoke`创建的另一个基本块中。原论文中提供了一个C++语言的示例。
+
+```c++
+{
+Class Object; // Has a destructor
+func(); // Might throw
+...
+}
+```
+
+```llvm
+...
+    ; Allocate stack space for object:
+    %Object = alloca %Class, uint 1
+    ; Construct object:
+    call void %Class::Class(%Class* %Object)
+    ; Call ‘‘func()’’:
+    invoke void %func() to label %OkLabel
+                    except label %ExceptionLabel
+OkLabel:
+    ; ... execution continues...
+    ExceptionLabel:
+    ; If unwind occurs, excecution continues
+    ; here. First, destroy the object:
+    call void %Class::~Class(%Class* %Object)
+    ; Next, continue unwinding:
+    unwind
+```
+
+#### 文本，二进制与内存中表示
+
+一言以蔽之，LLVM中间码的表示在这三者间是等价的，可以互相转化而不用担心信息丢失。
+
+### LLVM编译器结构
+
+在前端编译器编译代码到LLVM中间码后，LLVM链接器负责进行链接工作并进行优化，同时输出优化完毕的机器码和LLVM中间码。在运行时，一个轻量级的指令系统可以分析并进行简单的优化，这些分析信息可以被附加到程序中，使得离线优化器可以执行大量激进的优化工作。
+
+尽管如此，语言层级的优化只能在编译器前端执行。而且诸如Java这样需要复杂运行时的语言未必能从LLVM优化中获益。
 
 ## 参考文献
