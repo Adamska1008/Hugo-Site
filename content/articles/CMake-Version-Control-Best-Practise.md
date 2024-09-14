@@ -1,7 +1,7 @@
 ---
 title: 'CMake Version Control Best Practise'
 date: 2024-09-13T23:11:55+08:00
-draft: true
+draft: false
 author: Zijian Zang
 UseHugoToc: true
 tags: 
@@ -34,7 +34,20 @@ project(first VERSION 1.2.3)
 除此以外，还有其他方法可以配置版本号。例如在编译二进制文件时，为target添加definition。
 
 ```CMake
-target
+target_add_definitions(target_name PRIVATE
+    PROJECT_VERSION="${CMAKE_PROJECT_VERSION}"
+)
+```
+
+随后在程序中即可直接调用该宏定义。
+
+```C++
+#ifdef PROJECT_VERSION
+    std::cout << PROJECT_VERSION << std::endl;
+#else
+    std::cerr << "Undefined project version." << std::endl;
+    exit(1);
+#endif
 ```
 
 ## 参考文献
