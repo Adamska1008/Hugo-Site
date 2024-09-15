@@ -30,7 +30,7 @@ void F(const char * attr) { return F(std::string_view(attr)); }
 
 为什么内部直接调用了`string_view`的重载呢？因为在设计的角度上来说，`const char *`相当于是对静态区的左值引用，与`string_view`起到相同的作用。
 
-但这个简单的方法并没有从根本上解决问题。`std::string_view`的一大作用就在于，可以直接匹配`const char *`与`const string &`作为参数，从而避免实现两个重载。而与`string &&`同时使用时，这个优点荡然无存了。
+但这个简单的方法并没有从根本上解决问题。`std::string_view`的一大作用就在于，可以直接匹配`const char *`与`const string &`作为参数，从而避免实现两个重载。而在上文中，为了解决冲突，依然需要提供`const char *`的重载。这使得`string_view`的使用失去了意义。
 
 从这一点上考虑，只能说`string_view`与`string &&`非常不适合作为重载的参数。更好的解决办法是思考函数真的需要两个不同的重载吗？是否需要获取字符换的所有权？
 
