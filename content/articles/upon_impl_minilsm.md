@@ -36,3 +36,38 @@ Task3是Week1Day1中最需要动脑的。在介绍需要做什么之前，lab先
 同时，由于lab的代码定义`state`为`Arc<RwLock<Arc<LsmStorageState>>>`，即使获取了写锁`state`依旧是不可变的，只能创建新值。
 
 Task4也是比较好理解的。前面说过delete的问题，在lab4中会遇到，如果不这么实现，会误判删除后的值是没有遇到的，进而向后查找freezed的表，返回错误的旧值。
+
+## Week1Day2
+
+Task1同样是比较好理解的。主要难点在于理解Iterator的自引用设计，`ouroboros`库做了什么，如何使用其提供的方法。判断`MemTableIterator`是不是合法，只检查键是不是空，不能检查值。
+
+Task2是实现MergeIterator，这是Day2的难点。MergeIterator的任务是合并几个有序序列为一个有序序列，刷leetcode多的应该不陌生。一种简单方法是每轮比较所有序列头部，取出最小值，这样每轮比较的时间是O(n)。更好的办法是使用堆维护这些序列，堆顶即为最小值。同时，`MergeIterator`维护一个`current`的键值对，作为当前迭代的对象，而不是每次都访问堆顶。
+
+除此之外，Task2还需要解决一个问题：当有新值时，不采用旧值。实现方法是在检查堆顶时，若其当前`current`的`key`，则直接后移堆顶迭代器并整理其在堆中的位置，继续检查堆顶的值。上述内容的简单伪代码如下：
+
+```rust
+fn next() {
+   if !self.is_valid() {
+      return;
+   }
+   while let top = heap.peek() {
+      if top.key() == current.key() {
+         top.pop(); // 注意是top的list pop，而不是heap pop。这个迭代器依旧是需要的。
+         if !top.is_valid() {
+            heap.pop(top); // 需要堆支持移除任意位置的对象
+         }
+      } else {
+         break;
+      }
+   }
+   current.next();
+   if current.is_valid() {
+      heap.push(current);
+   }
+   current = heap.pop(); // 将current放回heap中，从而避免手动比较current与堆顶。此处实现与官方给的实现不同。
+}
+```
+
+Task3要实现LsmIterator和FusedIterator。前者需要注意，应当跳过被删除的键值对（值为空），在MergeIterator层级没有检查这一点。后者需要注意`has_errored`后，不应当允许用户访问内部迭代器的方法。因此总是要先检查`has_errored`。
+
+Task4的实现就比较显然了。在前面的实现正确的情况下，应该不会有什么问题。
