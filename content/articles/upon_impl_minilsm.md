@@ -71,6 +71,7 @@ fn next() {
 Task3要实现LsmIterator和FusedIterator。前者需要注意，应当跳过被删除的键值对（值为空），在MergeIterator层级没有检查这一点。后者需要注意`has_errored`后，不应当允许用户访问内部迭代器的方法。因此总是要先检查`has_errored`。
 
 Task4的实现就比较显然了。在前面的实现正确的情况下，应该不会有什么问题。
+<<<<<<< HEAD
 
 ## Week1Day3
 
@@ -79,3 +80,5 @@ Day3整体的任务是比较少比较简单的。主要聊聊设计思路。
 Block是SST存储的最小单位，其设计面向磁盘读写。虽然如此，在encode/decode时，并不会解析key/value数据本身，data_session在Block中全程是以纯粹的字节表示的。反序列kv数据的功能完全被放在了迭代器中，由迭代器实现。
 
 这一点在builder中也是同样实现的。builder并不会维护一个`Vec<(KeySlice, &[u8])>`，而是在添加键值时直接做好序列化，并存储到data中。
+=======
+>>>>>>> b8b26a3475abace556e96ed617b36bfd6cb616b1
