@@ -71,7 +71,6 @@ fn next() {
 Task3要实现LsmIterator和FusedIterator。前者需要注意，应当跳过被删除的键值对（值为空），在MergeIterator层级没有检查这一点。后者需要注意`has_errored`后，不应当允许用户访问内部迭代器的方法。因此总是要先检查`has_errored`。
 
 Task4的实现就比较显然了。在前面的实现正确的情况下，应该不会有什么问题。
-<<<<<<< HEAD
 
 ## Week1Day3
 
@@ -80,5 +79,32 @@ Day3整体的任务是比较少比较简单的。主要聊聊设计思路。
 Block是SST存储的最小单位，其设计面向磁盘读写。虽然如此，在encode/decode时，并不会解析key/value数据本身，data_session在Block中全程是以纯粹的字节表示的。反序列kv数据的功能完全被放在了迭代器中，由迭代器实现。
 
 这一点在builder中也是同样实现的。builder并不会维护一个`Vec<(KeySlice, &[u8])>`，而是在添加键值时直接做好序列化，并存储到data中。
-=======
->>>>>>> b8b26a3475abace556e96ed617b36bfd6cb616b1
+
+## Week1Day4
+
+Task1的任务是要实现SSTBuilder。其实现过程并不复杂，只谈几个技术点：
+
+1. 在将block写入SSTBuilder的data区时，可以使用`std::mem::replace()`处理需要move的成员变量。由于方法签名是`&mut self`，我们不能直接move成员变量。
+2. 使用`bytes`提供的`Buf`和`BufMut`trait。有函数签名
+   ```rust
+   /// Decode block meta from a buffer.
+   pub fn decode_block_meta(buf: impl Buf) -> Vec<BlockMeta> {
+         unimplemented!()
+   }
+   ```
+   `bytes`为一些类如`Vec<u8>`实现了`Buf`trait，我们可以直接从buf中读取`u16`等数据，不需要手动操作。我们也可以将encode方法中的buf类型改为`impl BufMut`而非使用原本的`Vec<u8>`
+   ```rust
+       /// Encode block meta to a buffer.
+    /// You may add extra fields to the buffer,
+    /// in order to help keep track of `first_key` when decoding from the same buffer in the future.
+    pub fn encode_block_meta(block_meta: &[BlockMeta], buf: &mut impl BufMut) {
+        for meta in block_meta {
+            buf.put_u32_le(meta.offset as u32);
+            buf.put_u16_le(meta.first_key.len() as u16);
+            buf.put(meta.first_key.raw_ref());
+            buf.put_u16_le(meta.last_key.len() as u16);
+            buf.put(meta.last_key.raw_ref());
+        }
+    }
+   ```
+   如此实现可以说是比较方便的。Day3的一些操作也可以使用这两个`trait`来完成。
