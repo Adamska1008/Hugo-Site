@@ -110,3 +110,14 @@ Task1的任务是要实现SSTBuilder。其实现过程并不复杂，只谈几�
    如此实现可以说是比较方便的。Day3的一些操作也可以使用这两个`trait`来完成。
 
 Task2的实现本身技术难度也不大，但是需要理清各类的职责。需要注意的一个细节是，find_block_index的返回值只确保`first_key <= key`，不能确保`key`就在这个block里。由于我们找的是第一个大于等于`key`的block，当`block`内部都找不到时，应当直接移到下一个block开头；如果这个block是最后一个则不动。二分查找可以直接使用`partition_point`方法。
+
+Task3更是简单。唯一的小问题是如何处理`try_get_with`返回的`Result`。作者的解法是
+
+```rust
+let blk = block_cache
+      .try_get_with((self.id, block_idx), || self.read_block(block_idx))
+      .map_err(|e| anyhow!("{}", e))?;
+```
+
+看上去不是很好，但是不清楚有无其他解法。
+
