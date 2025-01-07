@@ -120,3 +120,13 @@ let blk = block_cache
 ```
 
 看上去不是很好，但是不清楚有无其他解法。
+
+## WeekDay5
+
+Task1是一个类似于双有序列表合并的问题，区别在于对于同一个键只需要一个值。这种问题一般来说难度不大，但是需要注意边界检查。`key()`和`value()`方法都要注意边界检查，`is_valid()`方法则是需要检查两者都合法。`next()`方法稍微复杂一点，因为和`merge_iterator`一样，我们希望跳过a、b中都存在的键。做完边界检查后，需要判断a与b的key是否相等。不相等的情况下迭代小的那个。相等的情况下则需要都迭代一次。
+
+为什么这个`next()`的逻辑是对的呢？我们可以考虑各种情况：如果a和b的key不相同，由于对称性只考虑a的key较小的情况，则现在的key就是a的key，下一个key无非是a的下个key或b的下个key（或者二者相同），直接迭代a后，获取key就是比较上述两者，是合理的。如果a和b的key相同，则下一个key是a的下一个key或b的下一个key，因此需要迭代二者。
+
+Task2，我看了一下，我的实现和官方实现差距较大。文档说可以修改LsmIterator为SsTableIterator提供end_bound，但是我考虑到MemTable实现了`scan`，也希望在SsTable上实现`scan`方法。但是SsTableIterator内部有`Arc<SsTable>`，在不借助外部库的情况下clone自身为Arc比较复杂，故改为实现`SsTableIterator::scan`的静态方法。实现起来比较自然。
+
+Task3更是没什么好说的。
