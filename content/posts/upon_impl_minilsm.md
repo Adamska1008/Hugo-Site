@@ -1,5 +1,5 @@
 ---
-title: 'MiniLSM lab'
+title: 'MiniLSM lab Week1'
 date: 2025-01-02T20:22:25+08:00
 draft: true
 author: Zijian Zang
@@ -7,6 +7,8 @@ UseHugoToc: true
 tags: 
  - database
  - rust
+categories:
+ - 实现MiniLSM
 ---
 
 <!--more-->

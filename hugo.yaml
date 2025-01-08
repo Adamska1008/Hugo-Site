@@ -1,23 +1,50 @@
 baseURL: 'https://example.org/'
 languageCode: 'zh-cn'
-title: '随记'
-theme: 'PaperMod'
+title: '石榴石'
+theme: 'hugo-theme-stack'
 
 enableEmoji: true
 
 params:
-  author: Zijian Zang
-  homeInfoParams:
-    title: Welcome
+  author: 
+    name: Zijian Zang
+    email: adamska@foxmail.com
+  mainSections:
+    - posts
+  sidebar:
+    subtitle: 本想写点技术文章，可惜技术太差。只能记录学习历程。
+    avatar:
+      enabled: true
+      src: img/avatar.jpg
+    emoji: 📕
+
+  footer:
+    since: 2024
+  article:
+    license:
+      enabled: true
+    math: true
 
 menu:
   main:
     - identifier: 0
       name: 文章
-      url: /articles/
+      url: /posts/
+      weight: 1
+      params:
+        icon: archives
     - identifier: 1
       name: 标签
+      weight: 2
       url: /tags/
+      params:
+        icon: tag
+    - identifier: 2
+      name: 分类
+      weight: 3
+      url: /categories/
+      params:
+        icon: categories
 
 markup:
     highlight:
