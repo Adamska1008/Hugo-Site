@@ -1,10 +1,10 @@
 ---
-title: "搜索"
-slug: "search"
-layout: "search"
+title: 搜索
+slug: search
+layout: search
 outputs:
-    - html
-    - json
+  - html
+  - json
 menu:
   main:
     weight: 4

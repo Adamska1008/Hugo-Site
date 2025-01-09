@@ -1,5 +1,6 @@
 ---
 title: 'MiniLSM lab Week1'
+slug: 'MiniLSM lab Week1'
 date: 2025-01-02T20:22:25+08:00
 draft: false
 author: Zijian Zang
@@ -10,7 +11,11 @@ tags:
  - database
  - rust
 categories:
- - 实现MiniLSM
+ - minilsm-lab
+keywords:
+ - minilsm
+ - lsm
+ - database
 ---
 
 <!--more-->

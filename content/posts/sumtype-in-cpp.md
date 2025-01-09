@@ -1,11 +1,15 @@
 ---
 title: 'Sum Type in Cpp'
+slug: 'Sum Type in Cpp'
 date: 2024-09-18T19:40:00+08:00
-draft: false
+draft: true
 author: Zijian Zang
-UseHugoToc: true
+toc: true
 tags: 
- - C++
+ - c++
+keywords:
+ - c++
+ - sum type
 ---
 
 <!--more-->

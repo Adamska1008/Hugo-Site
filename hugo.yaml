@@ -30,17 +30,20 @@ params:
       - type: archives
         params:
           limit: 5
+      - type: tag-cloud
+      - type: categories
     page:
       - type: toc
+    
 
 menu:
   main:
     - identifier: 0
-      name: 文章
-      url: /posts/
+      name: 主页
+      url: /
       weight: 1
       params:
-        icon: archives
+        icon: home
     - identifier: 1
       name: 标签
       weight: 2
@@ -53,6 +56,13 @@ menu:
       url: /categories/
       params:
         icon: categories
+  social:
+    - identifier: github
+      name: Github
+      url: https://github.com/Adamska1008
+      params:
+        icon: brand-github
+
 
 markup:
     highlight:
