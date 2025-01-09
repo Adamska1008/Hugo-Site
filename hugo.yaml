@@ -24,6 +24,14 @@ params:
     license:
       enabled: true
     math: true
+  widgets:
+    homepage:
+      - type: search
+      - type: archives
+        params:
+          limit: 5
+    page:
+      - type: toc
 
 menu:
   main:

@@ -3,7 +3,9 @@ title: 'MiniLSM lab Week1'
 date: 2025-01-02T20:22:25+08:00
 draft: true
 author: Zijian Zang
-UseHugoToc: true
+toc: true
+description: Some thoughts on implementing minilsm week1
+image: image.png
 tags: 
  - database
  - rust
