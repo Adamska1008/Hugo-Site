@@ -6,7 +6,7 @@ theme: 'hugo-theme-stack'
 enableEmoji: true
 
 params:
-  favicon: /favicon.png
+  favicon: favicon.png
   author: 
     name: Zijian Zang
     email: adamska@foxmail.com

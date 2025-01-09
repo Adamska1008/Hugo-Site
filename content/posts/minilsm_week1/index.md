@@ -1,7 +1,7 @@
 ---
 title: 'MiniLSM lab Week1'
 date: 2025-01-02T20:22:25+08:00
-draft: true
+draft: false
 author: Zijian Zang
 toc: true
 description: Some thoughts on implementing minilsm week1
