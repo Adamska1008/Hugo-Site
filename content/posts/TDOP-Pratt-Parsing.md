@@ -3,9 +3,9 @@ title: 'TDOP Pratt Parsing'
 date: 2023-05-06T15:52:47+08:00
 draft: false
 author: Zijian Zang
-UseHugoToc: true
+toc: true
 tags: 
- - Parsing
+ - 
 ---
 
 Top Down Operator Precedence（TDOP）是Vaughan R. Pratt在1973年POPL（Principles of Programming Languages Symposium）第一期年刊上提出的一种简洁、易于实现、高效、类似自顶向下的表达式分析方法。

@@ -13,13 +13,13 @@ params:
   mainSections:
     - posts
   sidebar:
-    subtitle: 本想写点技术文章，可惜技术太差。只能记录学习历程。
+    subtitle: 不写博客都不知道自己做了什么。
     avatar:
       enabled: true
       src: img/avatar.jpg
     emoji: 📕
   footer:
-    since: 2024
+    since: 2023
   article:
     license:
       enabled: true

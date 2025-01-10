@@ -1,10 +1,15 @@
 ---
 title: '{{ replace .File.ContentBaseName "-" " " | title }}'
-date: {{ .Date }}
+slug: '{{ replace .File.ContentBaseName "-" " " | title }}'
+date: '{{ .Date }}'
 draft: true
 author: Zijian Zang
-UseHugoToc: true
+toc: true
+description: 
+image:
 tags: 
+categories:
+keywords:
 ---
 
 <!--more-->

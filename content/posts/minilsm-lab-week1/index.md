@@ -5,7 +5,7 @@ date: 2025-01-02T20:22:25+08:00
 draft: false
 author: Zijian Zang
 toc: true
-description: Some thoughts on implementing minilsm week1
+description: 关于MiniLSM Lab Week1的一些想法
 image: image.png
 tags: 
  - database
@@ -18,11 +18,37 @@ keywords:
  - database
 ---
 
-<!--more-->
+截至文章发布，我已经完成了Week1的内容。整体来说并不难实现，作者将任务的粒度分的比较细，大多数都为给定函数设计实现功能，一些可能踩坑的点也在介绍任务时讲明了。应该说，只要认真阅读任务要求，做起来是比较舒服的。本文主要简单概括一下每个任务的要求、作者没有详细介绍的知识点和基本的实现思路。
 
 ## Week1Day1
 
-Week1Day1包含四个Task。Task1并没有需要详细陈述的地方，主要问题是阅读文档了解`SkipList`和`Bytes`的基本使用方式。Task2也比较基础，但有一个细节问题：当put了一个空`Bytes`表示删除时，应该在MemTable层级就返回`None`吗？实际上不能这么做，因为需要区分一个键究竟是还没有存放过还是被删除了，这一区别将用于判断是否需要继续在freezed tables中查找。MemTable对于删除操作应当如实返回，而在LsmStorageInner层级才通过返回`None`表示不存在了。
+Week1Day1的主要任务是实现MemTable相关功能。MemTable是key/value在内存中的存储容器，也是查找时首先访问的数据结构。活跃的MemTable只有一个，当活跃MemTable到达容量上限时，会被freeze，转化为Immutable MemTable，不会再写入数据，只会读它。这种不可变的MemTable后续将用于持久化存储。
+
+MemTable没有删除方法。这是因为在LSM中，删除也通过插入来实现：插入一个特殊的Log（MiniLSM的实现为空值的Log）。虽然这一设计对于内存容器似乎很奇怪，但在后续持久化存储相关的功能中有着很大的用处。
+
+### Task1
+
+Task1并没有需要详细陈述的地方。主要需要了解两个依赖库的使用方法：`bytes`与`crossbeam-skiplist`。
+
+`crossbeam`本身是一个常用并发编程的工具集。`crossbeam-skiplist`暂时是实验性质的，没有放在`crossbeam`项目中，因此需要单独引入。它实现了基于无锁跳表的Map和Set。无锁编程是一种基于原子类型的并发编程范式，不多赘述。得益于此，可以保证容器操作都是原子的，我们不需要在MemTable容器操作时上锁。至于使用跳表本身，应该没有特殊理由，正如redis作者对于为什么使用跳表的答复：比红黑树容易实现。
+
+`bytes`是一个字节功能相关的库，核心类型`bytes::Bytes`指向一个可以被共享的内存块，允许自身被clone后仍然指向原地址，由此降低了clone的开销，实现零拷贝。它也提供了大量简便功能，后续会使用。
+
+明白了这些基本知识后，实现`MemTable::get`与`MemTable::put`便比较简单，只要封装一下`SkipMap`的功能，处理一下`&[u8]`到`Bytes`的转换就行。
+
+### Task2
+
+Task2的工作是把MemTable放到LsmStorageInner中。已有的代码已经完成了LsmStorage的定义工作，其存储被存放在`state`成员中，`state`包含了存储键值对的所有数据结构，MemTable是其中的一部分。Task2只要求完成唯一活跃的MemTable相关代码。
+
+基本上，Task2也只是封装一下刚刚MemTable实现的方法。但是LsmStorageInner内部是使用锁的。唯一活跃MemTable使用了读写锁，读写锁允许多个线程同时读取内容，或者单一线程写入内容。
+
+>MiniLSM没有使用标准库的读写锁，而是使用了`parking_lot`库实现的读写锁。相较于标准库，`parking_lot`优化了接口与性能表现，同时实现了两个比较重要的feature
+>1. 任务公平性。当有一个线程请求写时，会阻塞读请求，从而避免写者饥饿问题。标准库的实现与操作系统有关，在Linux下默认采用读者优先策略。
+>2. `parking_lot`的锁在持有线程panic时不会进入中毒状态，而是会直接释放锁。
+
+有一个细节问题：当put了一个空`Bytes`表示删除时，应该在MemTable层级就返回`None`吗？实际上不能这么做，因为需要区分一个键究竟是没有存放过还是被删除了，这一区别将用于判断是否需要继续在freezed tables中查找——如果没存放过就找，如果被删除了就应当返回不存在。
+
+### Task3
 
 Task3是Week1Day1中最需要动脑的。在介绍需要做什么之前，lab先详细介绍了两个关注点：
 

@@ -1,9 +1,9 @@
 ---
 title: '读论文：Setuid Demystified'
 date: 2024-01-24T19:54:18+08:00
-draft: false
+draft: true
 author: Zijian Zang
-UseHugoToc: true
+toc: true
 tags: 
  - Linux
  - Unix

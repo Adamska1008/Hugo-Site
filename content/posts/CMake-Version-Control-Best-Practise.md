@@ -1,7 +1,7 @@
 ---
 title: 'CMake Version Control Best Practise'
 date: 2024-09-13T23:11:55+08:00
-draft: false
+draft: true
 author: Zijian Zang
 UseHugoToc: true
 tags: 

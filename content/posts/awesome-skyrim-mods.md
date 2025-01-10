@@ -3,7 +3,7 @@ title: 'Awesome Skyrim Mods'
 date: 2024-10-29T21:22:49+08:00
 draft: true
 author: Zijian Zang
-UseHugoToc: true
+toc: true
 tags:
  - skyrim 
 ---
