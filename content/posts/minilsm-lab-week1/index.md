@@ -160,11 +160,17 @@ Task4要实现scan，只要在每个MemTable上调用Task1实现的scan，并将
 
 ## Week1Day3
 
-Day3整体的任务是比较少比较简单的。主要聊聊设计思路。
+Day3主要面向二进制字节流，需要实现持久化存储的最小单位Block。整体任务量较小。
 
-Block是SST存储的最小单位，其设计面向磁盘读写。虽然如此，在encode/decode时，并不会解析key/value数据本身，data_session在Block中全程是以纯粹的字节表示的。反序列kv数据的功能完全被放在了迭代器中，由迭代器实现。
+### Task1
 
-这一点在builder中也是同样实现的。builder并不会维护一个`Vec<(KeySlice, &[u8])>`，而是在添加键值时直接做好序列化，并存储到data中。
+Task1需要实现BlockBuilder。Block的定义原文讲的很清楚。要向一个（未来的）Block中添加键值对，必须通过BlockBuilder进行。它在内部维护一个`data: Vec<u8>`，与Block中的data_section区保持一致。每次添加键值对，总是会立即将其序列化并放到`data`中。这样，当调用`build`方法时，不需要逐个处理键值对，只要将offset_section和num_of_elements处理好即可。
+
+注意可以利用`bytes`提供的`BytesMut`trait来实现功能。`bytes`为`Vec<u8>`实现了这一trait，可以直接调用诸如`put_u16_ne`（ne表示natural ending，与操作系统一致）这样方便的方法，而不需要手动序列化u16到`[u8;2]`。
+
+### Task2
+
+实现BlockIterator，支持在一个输出好的Block上进行迭代。Block的定义非常简单，只包括原始二进制data_section和一个`offsets: Vec<usize>`成员变量，根据offsets查找并反序列化键值对并不困难。
 
 ## Week1Day4
 
