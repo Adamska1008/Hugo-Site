@@ -22,7 +22,7 @@ keywords:
 
 ## Week1Day1
 
-Week1Day1的主要任务是实现MemTable相关功能。MemTable是key/value在内存中的存储容器，也是查找时首先访问的数据结构。活跃的MemTable只有一个，当活跃MemTable到达容量上限时，会被freeze，转化为Immutable MemTable，不会再写入数据，只会读它。这种不可变的MemTable后续将用于持久化存储。
+Week1Day1的主要任务是实现MemTable（Memory Table）相关功能。MemTable是key/value在内存中的存储容器，也是查找时首先访问的数据结构。活跃的MemTable只有一个，当活跃MemTable到达容量上限时，会被freeze，转化为Immutable MemTable，不会再写入数据，只会读它。这种不可变的MemTable后续将用于持久化存储。
 
 MemTable没有删除方法。这是因为在LSM中，删除也通过插入来实现：插入一个特殊的Log（MiniLSM的实现为空值的Log）。虽然这一设计对于内存容器似乎很奇怪，但在后续持久化存储相关的功能中有着很大的用处。
 
@@ -30,7 +30,7 @@ MemTable没有删除方法。这是因为在LSM中，删除也通过插入来实
 
 Task1并没有需要详细陈述的地方。主要需要了解两个依赖库的使用方法：`bytes`与`crossbeam-skiplist`。
 
-`crossbeam`本身是一个常用并发编程的工具集。`crossbeam-skiplist`暂时是实验性质的，没有放在`crossbeam`项目中，因此需要单独引入。它实现了基于无锁跳表的Map和Set。无锁编程是一种基于原子类型的并发编程范式，不多赘述。得益于此，可以保证容器操作都是原子的，我们不需要在MemTable容器操作时上锁。至于使用跳表本身，应该没有特殊理由，正如redis作者对于为什么使用跳表的答复：比红黑树容易实现。
+`crossbeam`本身是一个常用并发编程的工具集。`crossbeam-skiplist`暂时是实验性质的，没有放在`crossbeam`项目中，因此需要单独引入。它实现了基于无锁跳表的Map和Set。无锁编程是一种基于原子类型的并发编程范式，不多赘述。得益于此，可以保证容器操作都是原子的，我们不需要在MemTable容器操作时上锁，并且允许`put`方法不可变地借用自身。至于使用跳表本身，应该没有特殊理由，正如redis作者对于为什么使用跳表的答复：比红黑树容易实现。
 
 `bytes`是一个字节功能相关的库，核心类型`bytes::Bytes`指向一个可以被共享的内存块，允许自身被clone后仍然指向原地址，由此降低了clone的开销，实现零拷贝。它也提供了大量简便功能，后续会使用。
 
@@ -50,11 +50,31 @@ Task2的工作是把MemTable放到LsmStorageInner中。已有的代码已经完�
 
 ### Task3
 
-Task3是Week1Day1中最需要动脑的。在介绍需要做什么之前，lab先详细介绍了两个关注点：
+Task3将 *冻结（Freezing）* 活跃的MemTable。冻结后MemTable将不可变，类似于历史记录，只能查询过去存储了什么key/value，不能修改。它的作用在于隔离写入活跃的区域和可以持久化存储的区域。
 
-1. 使用`state_lock`做更细粒度的并发控制。`state`本身就已经是`RwLock`了，为什么还加一把锁？`state_lock`用于需要freeze时，限制其他线程不做freeze操作。如果使用RwLock的写锁，则会面临一个问题：其实此时依旧允许其他线程来读取数据，因为在判断需要freeze和实际修改state之间还有一段真空区，后续可能做一些io操作。
-   - 这一点被用于`put`的内部实现
-2. 使用双重条件检查。双重检查如下：
+Freezing将在MemTable超容量后执行。那么，首先就需要维护已有key/value的空间占用，这就需要修改此前编写的`put`代码。注意到MemTable采用无锁编程的范式，我们维护`size`变量也应当使用原子类型。
+
+接下来实现freeze的代码。方法调用链为`put() -> force_freeze_memtable()`。思路并不复杂，伪代码可以表示为
+
+```rust
+fn put(key, value) {
+   state.memtable.put(key, value);
+   if state.memtable.approximate_size() >= options.target_sst_size {
+      force_freeze_memtable();
+   }
+}
+
+fn force_freeze_memtable() {
+   let sst_id = next_sstid();
+   state.imm_memtable.insert(0, state.memtable);
+   state.memtable = MemTable::new(sst_id);
+}
+```
+
+似乎几行代码就能实现？但是实际上会复杂一点，因为需要考虑并发编程。Lab作者详细介绍了两处细节：
+
+1. 使用`state_lock`做更细粒度的并发控制。从发现MemTable超出容量，到开始修改state，这一段期间（在未来）可以做许多操作，例如为MemTable创建预写日志（WAL）。我们希望做这些操作时，依然允许MemTable中读甚至写一些内容——即使超出设定容量，为了响应速度也是值得的。为了实现这一点我们需要第二个互斥量，它只防止二次freeze，但不限制通过RwLock进行读写操作。这就是源代码中`state_lock`的作用。
+2. 使用双重条件检查。双重条件检查类似如下代码，会在上锁前后各判断一次条件。
    ```rust
    let lock = Mutex::new(false);
    let cond = true;
@@ -65,10 +85,21 @@ Task3是Week1Day1中最需要动脑的。在介绍需要做什么之前，lab先
         } 
    }
    ```
-   这是因为判断条件与上锁不是原子操作，如果没有内部条件判断，可能导致两个线程同时判断条件为真后都上锁，一个阻塞一个执行，执行完毕后另一个线程获取锁，再度执行一遍操作。内部条件判断用于在另一个线程阻塞后获取锁后，判断不满足条件从而直接跳出。
-   - 这一点被用于`force_freeze_memtables`的内部实现。
+   这有什么用？首先我们必须要根据条件才能上锁，所以第一个条件判断是必须的。那么，第二个条件判断的作用是什么？
+   由于`if cond { *guard = true; }`不是一个原子操作，可能会有两个线程同时进行条件判断，同时判断为真，于是最终执行两次内部代码。通过第二个条件判断，我们保证在上述情况中，即使第二个线程也进入了内部，依然会在第二次判断中获得false，于是跳出，避免了执行两次操作。
 
-同时，由于lab的代码定义`state`为`Arc<RwLock<Arc<LsmStorageState>>>`，即使获取了写锁`state`依旧是不可变的，只能创建新值。
+此外，还有一点与rust本身的特性相关：state被定义为`Arc<RwLock<Arc<LsmStorageState>>>`。由于RwLock锁上的依然是不可变的`Arc`，即使获取了读锁，实际上也是不能改变LsmStorageState内部的，例如为imm_memtables添加内容。我们只能为`state`赋予新值。
+
+```rust
+let mut guard = state.write();
+let mut new_state = guard.as_ref().clone();
+// ...
+*guard = Arc::new(new_state);
+```
+
+这种编程思想在函数式编程领域使用较多，基于不可变状态，可以规避许多资源竞争的问题。
+
+### Task4
 
 Task4也是比较好理解的。前面说过delete的问题，在lab4中会遇到，如果不这么实现，会误判删除后的值是没有遇到的，进而向后查找freezed的表，返回错误的旧值。
 
