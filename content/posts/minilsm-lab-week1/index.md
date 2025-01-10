@@ -105,7 +105,19 @@ let mut new_state = guard.as_ref().clone();
 
 ## Week1Day2
 
-Task1同样是比较好理解的。主要难点在于理解Iterator的自引用设计，`ouroboros`库做了什么，如何使用其提供的方法。判断`MemTableIterator`是不是合法，只检查键是不是空，不能检查值。
+Day2的任务是实现MergeIterator，从多个MemTable（包括一个活跃和多个不可变）中整合信息。MergeIterator也可用于其他实现了StorageIterator的类。
+
+### Task1
+
+Task1的描述中给出了StorageIterator这个trait的定义，后续实现功能时切记与定义一致。
+
+首先需要实现在单一MemTable上做范围查找。有序的Map支持范围查找。对于含有n个节点，深度为h的Map，如果符合范围的有k个元素，则有序的Map可以在O(logn + k)，无序的Map则只能遍历全部，时间复杂度为O(n)。
+
+跳表是有序的，可以做范围查找。`crossbeam-skiplist`的SkipMap提供了`range`方法，查阅文档即可实现。
+
+Task1的主要难点在于学习操作自引用的类型，详细内容建议查阅原教学和`ouroboros`库文档理解。只需要学习如何使用，还是比较简单的。
+
+### Task2
 
 Task2是实现MergeIterator，这是Day2的难点。MergeIterator的任务是合并几个有序序列为一个有序序列，刷leetcode多的应该不陌生。一种简单方法是每轮比较所有序列头部，取出最小值，这样每轮比较的时间是O(n)。更好的办法是使用堆维护这些序列，堆顶即为最小值。同时，`MergeIterator`维护一个`current`的键值对，作为当前迭代的对象，而不是每次都访问堆顶。
 
@@ -133,6 +145,8 @@ fn next() {
    current = heap.pop(); // 将current放回heap中，从而避免手动比较current与堆顶。此处实现与官方给的实现不同。
 }
 ```
+
+### Task3
 
 Task3要实现LsmIterator和FusedIterator。前者需要注意，应当跳过被删除的键值对（值为空），在MergeIterator层级没有检查这一点。后者需要注意`has_errored`后，不应当允许用户访问内部迭代器的方法。因此总是要先检查`has_errored`。
 
