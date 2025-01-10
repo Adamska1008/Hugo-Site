@@ -119,9 +119,9 @@ Task1的主要难点在于学习操作自引用的类型，详细内容建议查
 
 ### Task2
 
-Task2是实现MergeIterator，这是Day2的难点。MergeIterator的任务是合并几个有序序列为一个有序序列，刷leetcode多的应该不陌生。一种简单方法是每轮比较所有序列头部，取出最小值，这样每轮比较的时间是O(n)。更好的办法是使用堆维护这些序列，堆顶即为最小值。同时，`MergeIterator`维护一个`current`的键值对，作为当前迭代的对象，而不是每次都访问堆顶。
+Task2是实现MergeIterator，这是Day2的难点。MergeIterator的任务可以看作是合并几个有序序列为一个有序序列，刷leetcode多的应该不陌生。一种简单方法是每轮比较所有序列头部，取出最小值，这样每轮比较的时间是O(n)。更好的办法，也是MiniLSM使用的方法是使用堆维护这些迭代器，堆顶是头部最小的迭代器。同时，MergeIterator总是从堆顶提取出最小值作为`current`成员变量，易于访问。
 
-除此之外，Task2还需要解决一个问题：当有新值时，不采用旧值。实现方法是在检查堆顶时，若其当前`current`的`key`，则直接后移堆顶迭代器并整理其在堆中的位置，继续检查堆顶的值。上述内容的简单伪代码如下：
+注意，此处的合并有序序列，与leetcode不同的地方在于：对于key相同的key/value序列，总是只取第一次访问到的（最新的）。旧的记录会被新的覆盖。实现方法是在`next`方法中，若堆顶迭代器的key与当前`current`成员的key相同，则调整该迭代器指向下一个key，并整理其在堆中的位置，继续检查堆顶的值，重复以上过程，直到堆顶的key与current不同。上述内容的简单伪代码如下：
 
 ```rust
 fn next() {
@@ -148,9 +148,15 @@ fn next() {
 
 ### Task3
 
-Task3要实现LsmIterator和FusedIterator。前者需要注意，应当跳过被删除的键值对（值为空），在MergeIterator层级没有检查这一点。后者需要注意`has_errored`后，不应当允许用户访问内部迭代器的方法。因此总是要先检查`has_errored`。
+Task3要实现LsmIterator和FusedIterator，实际是实现FusedIterator，因为LsmIterator的功能需求，实现上的坑，要到Task4的测试中才能发现。
 
-Task4的实现就比较显然了。在前面的实现正确的情况下，应该不会有什么问题。
+FusedIterator的目标是，记录`next`是否造成了迭代器非法（`!is_valid()`），如果非法则禁止调用`next`，会返回`Err()`枚举。关键是在每个方法中总是要先检查`has_errored`。
+
+### Task4
+
+Task4要实现scan，只要在每个MemTable上调用Task1实现的scan，并将得到的所有迭代器放在MergeIterator中就行。关键是LsmIterator中的一些细节。
+
+由于我们在MemTable这个抽象并没有特殊处理被删除的键，因此必须在LsmIterator上处理它（对于单点查询，则是在`get`方法内部处理）。具体是在每一步操作过后，总是检查下一步的值是否为空，跳过所有空值。
 
 ## Week1Day3
 
