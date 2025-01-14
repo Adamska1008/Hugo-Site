@@ -10,6 +10,8 @@ image: image.png
 tags: 
  - database
  - rust
+series:
+ - minilsm-lab
 categories:
  - minilsm-lab
 keywords:
@@ -186,24 +188,30 @@ Taks1需要实现SSTBuilder，除此之外还需要实现`Metadata`类的编解�
 
 Task2为SST实现迭代器。注意，为了查找效率，我们应当对所有Block做二分查找。在Block内部，则是直接线性迭代。通过之前维护的`Metadata`，要进行二分查找并不困难，但需要注意的一个细节是，`find_block_index`（二分查找方法）的返回值只确保`first_key <= key`，不能确保`key`就在这个block里。由于我们找的是第一个大于等于`key`的block，当`block`内部都找不到时，应当直接移到下一个block开头；如果这个block是最后一个则不动。实现二分查找可以直接使用`partition_point`方法。
 
+### Task3
 
+原文实际上没有对Task3的功能做测试：毕竟使用cache主要是为性能而非功能做考虑。`read_block_cached`方法首先检查是否有`Cache`成员，若无则依旧使用平凡方法。`mock-rs`提供的缓存在查询时接受一个闭包函数，用于当缓存未命中时，加载数据。了解使用方法后不难使用。
 
-Task3更是简单。唯一的小问题是如何处理`try_get_with`返回的`Result`。作者的解法是
+## Week1Day5
 
-```rust
-let blk = block_cache
-      .try_get_with((self.id, block_idx), || self.read_block(block_idx))
-      .map_err(|e| anyhow!("{}", e))?;
-```
+之前分别实现了内存与磁盘中的数据结构，Day5的目标是结合二者，实现读取操作，具体包括重写单一查询`get`和范围查询`scan`。`LsmStorageState`内部维护了一个`l0_sstables`数组，用于保存`sst_id`的同时也维护顺序，越是靠前的SST越新。而`sstables`成员则是一个Map。要以从新到旧的顺序访问SST，应当先遍历`l0_sstables`，再通过id查找Map，而非直接查找Map，那是随机顺序的。
 
-看上去不是很好，但是不清楚有无其他解法。
+### Task1
 
-## WeekDay5
-
-Task1是一个类似于双有序列表合并的问题，区别在于对于同一个键只需要一个值。这种问题一般来说难度不大，但是需要注意边界检查。`key()`和`value()`方法都要注意边界检查，`is_valid()`方法则是需要检查两者都合法。`next()`方法稍微复杂一点，因为和`merge_iterator`一样，我们希望跳过a、b中都存在的键。做完边界检查后，需要判断a与b的key是否相等。不相等的情况下迭代小的那个。相等的情况下则需要都迭代一次。
+Task1是一个类似于双有序列表合并的问题，区别在于需后插入的值应插入前插入的值，查询键应返回最新值。此类问题整体上难度不大，但是需要注意边界检查。`key()`和`value()`方法都要注意边界检查，`is_valid()`方法则是需要检查两者都合法。`next()`方法稍微复杂一点，因为和`merge_iterator`一样，我们希望跳过a、b中都存在的键。做完边界检查后，需要判断a与b的key是否相等。不相等的情况下迭代小的那个。相等的情况下则需要都迭代一次。
 
 为什么这个`next()`的逻辑是对的呢？我们可以考虑各种情况：如果a和b的key不相同，由于对称性只考虑a的key较小的情况，则现在的key就是a的key，下一个key无非是a的下个key或b的下个key（或者二者相同），直接迭代a后，获取key就是比较上述两者，是合理的。如果a和b的key相同，则下一个key是a的下一个key或b的下一个key，因此需要迭代二者。
 
-Task2，我看了一下，我的实现和官方实现差距较大。文档说可以修改LsmIterator为SsTableIterator提供end_bound，但是我考虑到MemTable实现了`scan`，也希望在SsTable上实现`scan`方法。但是SsTableIterator内部有`Arc<SsTable>`，在不借助外部库的情况下clone自身为Arc比较复杂，故改为实现`SsTableIterator::scan`的静态方法。实现起来比较自然。
+### Task2
 
-Task3更是没什么好说的。
+Task2需要应用刚刚实现的TwoMergeIterator来包装两个MergeIterator，二者分别维护了一组MemTable与一组SSTable，由此实现`scan`方法。然而，我们在`MemTable`中可以直接调用`SkipMap`的`range`方法进行返回查找，而`SSTable`中并没有现成的方式，需要自己实现。
+
+我的实现和官方实现差距较大。文档说可以修改LsmIterator为SsTableIterator提供end_bound，但是我考虑到既然MemTable实现了`scan`，根据对称性也可在SsTable上实现`scan`方法。但是SsTableIterator内部有`Arc<SsTable>`，在不借助外部库的情况下clone自身Arc比较复杂，故改为实现`SsTableIterator::scan`的静态方法。
+
+为SSTable实现了范围查找后，只需要在`LsmStorageInner`的内部各自对每个SST调用一次，放到MergeIterator之中即可。
+
+### Task3
+
+Task3是实现`get`。唯一的改动是在`imm_memtable`找不到时，继续在SST中查找。
+
+## Week1Day6
