@@ -229,3 +229,58 @@ Task2要实现的`trigger_flush`是`force_flush_next_imm_memtable`的入口，�
 ### Task3
 
 为每个迭代器实现`num_active_iterators`方法。注意MergeIterator中，`current`自身也是一个额外的Iterator。除此之外，由于我的Day5实现与原文有较大差异，所以实际上不需要优化就能做到原文优化过的效果。
+
+## Week1Day7
+
+Day7的任务是实现一些功能无关的优化操作。包括实现Bloom Filter和相同prefix的key compaction。
+
+### Task1
+
+需要实现两个Bloom Filter的核心方法：`build_from_key_hashes`、`may_contain`。本文不会介绍Bloom Filter的基本知识。
+
+Bloom Filter的误判率 $p$ 可以通过如下公式计算
+
+$$
+p \approx (1-e^{-k \times \frac{m}{n} })^k
+$$
+
+其中，$k$ 是哈希函数数量，$m$ 是位数组长度，$n$ 是键的数量。如下为推导过程：
+
+每个哈希函数置某个位1的概率为 $\frac{1}{m}$，一个位在插入 $n$ 个键后仍为0的概率是
+
+$$
+(1-\frac{1}{m})^{k\times n}
+$$
+
+误判的定义是对于一个键，其对应 $k$ 个哈希函数对应位都被置为1。所以误判率为
+
+$$
+(1-(1-\frac{1}{m})^{k\times n})^k
+$$
+
+近似为如上公式。由近似公式可以解出，当确定 $p$ 与其他参数时，如何求解 $m$。
+
+$$
+m \approx -\frac{k^2\times n}{ln(p)} 
+$$
+
+这个公式是非常有用的。对于SST的Bloom Filter，我们不需要加新键，而是固定键的数量计算分配多大的位数组。
+
+同时，我们希望知道 $p$ 最小时 $k$ 的值。通过对原公式求 $k$ 的偏导得到 $p$ 最小时，
+
+$$
+k = \frac{m}{n} \times ln(2)
+$$
+
+由上述公式可以计算出 $k$ 和 $m$ 的最优值。接下来我们解决确定所有参数后，如何实现`build_from_key_hashes`方法的问题，基本实现思路为。
+
+```rust
+for key in keys {
+   for i in 0..k {
+      let bit_pos: usize = hash(i, key) % nbits; // nbits 为位数组大小
+      filter.set_bit(bit_pos);
+   }
+}
+```
+
+原作者提供了一种简单实现hash函数的方法。首先利用任意一个函数库将原key映射到一个整型，接下来不断迭代：先左移，再将原值加上左移后的值，并将获得的值用于下一次迭代中。总之，无论使用什么计算方法，为了支持指定任意k个哈希函数，基本思路是使用同一个计算方法，但是代入不断迭代的新值。
