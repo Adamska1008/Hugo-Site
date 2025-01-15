@@ -14,7 +14,7 @@ params:
   mainSections:
     - posts
   sidebar:
-    subtitle: 不写博客都不知道自己做了什么。
+    subtitle: 不写博客都记不住自己做了什么。
     avatar:
       enabled: true
       src: img/avatar.jpg
