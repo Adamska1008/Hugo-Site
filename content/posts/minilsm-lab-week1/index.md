@@ -6,7 +6,7 @@ draft: false
 author: Zijian Zang
 toc: true
 description: 关于MiniLSM Lab Week1的一些想法
-image: image.png
+image: cover.png
 tags: 
  - database
  - rust
