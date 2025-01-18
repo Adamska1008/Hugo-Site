@@ -48,3 +48,17 @@ Task1只需要实现两个方法：`compact`和`force_full_compaction`，前者�
 `compact`是核心压缩算法，但也并不难实现，因为可以利用之前实现的`MergeIterator`来完成排序和去重的操作，只需要自行添加删除的功能即可。由于`CompactionTask`是Serializable的，传入`compact`的参数只能是id不能直接是SSTs本身，故在内部还要通过一个读锁来获取SSTs。
 
 压缩算法维护一个MemTable作为临时容器，而原本的SST全部获取迭代器后放到MergeIterator中，不断取出key/value直到用尽迭代器。如果发现值为空说明被删除了，跳过即可。如果超过了sst_size限制，则写入到一个SST中，并放到新创建的SST数组内。
+
+### Task2
+
+Task2与压缩算法并无直接关系，我们需要实现一个`ConcatIterator`，它与`MergeIterator`相对，后者实现了为多个有序Iterator保证整体有序的机制，同时完成了去重工作，而前者则简单许多，它只会依次迭代内部的每个Iterator，但也因此没有MergeIterator那么大的计算量，并且只会在内存中保留一个SST以及其正在维护的Block，内存占用也非常少。当使用`ConcatIterator`的`create_and_seek_to_key`方法时，它假定每个内部迭代器不仅内部有序，而且整体有序，因此会通过读取内部SstIterator的`first_key`来快速定位到对应`SST`中。
+
+`ConcatIterator`本身实现起来比`MergeIterator`简单。需要额外注意的是，为了保证它内部的一个SST访问完之后切换到下一个SST，需要实现一个`skip_invalid`方法并在`next`方法中调用。
+
+### Task3
+
+`ConcatIterator`的作用是，对于某一个level的SST（除了L0），可以直接放到一个`ConcatIterator`里（因为compact保证除了l0的SST都全局有序），此时的读取效率是比较好的，远好于l0 SST。Task3的任务就是应用好之前写的两个组件，修改`get`和`scan`方法在读流程中加入其他level的SST。本例中只考虑l1即可。
+
+`get`中，由于l1 SST是有序的，可以使用`ConcatIterator`包裹l1的所有SSTs，并调用`create_and_seek_to_key`方法。或者也可以与l0 SST用相同的写法，在功能性上不会有什么问题。
+
+`scan`中，则需要在已有的TwoMergeIterator上多加一层，形成`TwoMergeIterator<TwoMergeIterator, ConcatIterator>`的结构，同时修改`LsmIteratorInner`的定义。当后续添加多层level时，还将改成`TwoMergeIterator<TwoMergeIterator, MergeIterator<ConcatIterator>>`的结构，亦可现在直接实现。
